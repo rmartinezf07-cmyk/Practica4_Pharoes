@@ -31,7 +31,11 @@ public class Practica4 {
 
         // 3. Escribir CSV
         escribirCSV(dias, temperaturas, consumos);
-        System.out.println("¡Archivo datos.csv generado correctamente!");
+
+        // 4. Generar Dashboard HTML
+        generarDashboardDesdeCSV();
+
+        System.out.println("¡Listo! Se han generado datos.csv y dashboard.html correctamente.");
     }
 
     static RespuestaOpenMeteo obtenerDatosMeteorologicos() throws Exception {
@@ -68,5 +72,71 @@ public class Practica4 {
                     .append(consumos.get(i)).append("\n");
         }
         Files.writeString(Path.of("datos.csv"), sb.toString());
+    }
+
+    // --- MÉTODO 4: LEER CSV Y GENERAR EL HTML ---
+    static void generarDashboardDesdeCSV() throws Exception {
+        List<String> lineas = Files.readAllLines(Path.of("datos.csv"));
+
+        List<String> dias = new ArrayList<>();
+        List<String> temps = new ArrayList<>();
+        List<String> consumos = new ArrayList<>();
+
+        // Saltamos la cabecera (i = 1)
+        for (int i = 1; i < lineas.size(); i++) {
+            String[] partes = lineas.get(i).split(",");
+            dias.add("'" + partes[0] + "'"); // comillas simples para JS
+            temps.add(partes[1]);
+            consumos.add(partes[2]);
+        }
+
+        String diasJS = String.join(", ", dias);
+        String tempsJS = String.join(", ", temps);
+        String consumosJS = String.join(", ", consumos);
+
+        // Plantilla HTML con los gráficos de ECharts
+        String html = """
+                <!DOCTYPE html>
+                <html lang="es">
+                <head>
+                    <meta charset="UTF-8">
+                    <title>Dashboard Consumo Refrigeración</title>
+                    <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+                </head>
+                <body>
+                    <h2 style="text-align:center">Temperatura máxima diaria</h2>
+                    <div id="grafico-temperatura" style="width:100%%; height:400px;"></div>
+
+                    <h2 style="text-align:center">Consumo estimado de refrigeración</h2>
+                    <div id="grafico-consumo" style="width:100%%; height:400px;"></div>
+
+                    <script>
+                        var dias = [%s];
+                        var temperaturas = [%s];
+                        var consumos = [%s];
+
+                        var chartTemp = echarts.init(document.getElementById('grafico-temperatura'));
+                        chartTemp.setOption({
+                            title: { text: 'Temperatura máxima (°C)' },
+                            tooltip: {},
+                            xAxis: { type: 'category', data: dias, name: 'Día' },
+                            yAxis: { type: 'value', name: '°C' },
+                            series: [{ type: 'line', data: temperaturas, name: 'Temp. máx' }]
+                        });
+
+                        var chartConsumo = echarts.init(document.getElementById('grafico-consumo'));
+                        chartConsumo.setOption({
+                            title: { text: 'Consumo de refrigeración (kWh)' },
+                            tooltip: {},
+                            xAxis: { type: 'category', data: dias, name: 'Día' },
+                            yAxis: { type: 'value', name: 'kWh' },
+                            series: [{ type: 'bar', data: consumos, name: 'Consumo' }]
+                        });
+                    </script>
+                </body>
+                </html>
+                """.formatted(diasJS, tempsJS, consumosJS);
+
+        Files.writeString(Path.of("dashboard.html"), html);
     }
 }
