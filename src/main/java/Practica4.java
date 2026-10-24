@@ -5,11 +5,11 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.util.ArrayList;
 import java.util.List;
 
 public class Practica4 {
 
-    // Clases para mapear el JSON de Open-Meteo
     static class RespuestaOpenMeteo {
         Daily daily;
     }
@@ -23,11 +23,14 @@ public class Practica4 {
     public static void main(String[] args) throws Exception {
         // 1. Obtener datos
         RespuestaOpenMeteo respuesta = obtenerDatosMeteorologicos();
-        System.out.println("Días obtenidos: " + respuesta.daily.time);
-        System.out.println("Temperaturas: " + respuesta.daily.temperature2mMax);
+        List<Double> temperaturas = respuesta.daily.temperature2mMax;
+
+        // 2. Calcular consumos
+        List<Double> consumos = calcularConsumos(temperaturas);
+        System.out.println("Temperaturas: " + temperaturas);
+        System.out.println("Consumos calculados: " + consumos);
     }
 
-    // --- MÉTODO 1: LLAMADA A LA API ---
     static RespuestaOpenMeteo obtenerDatosMeteorologicos() throws Exception {
         String url = "https://api.open-meteo.com/v1/forecast"
                 + "?latitude=40.4168&longitude=-3.7038"
@@ -39,5 +42,18 @@ public class Practica4 {
 
         Gson gson = new Gson();
         return gson.fromJson(response.body(), RespuestaOpenMeteo.class);
+    }
+
+    // --- MÉTODO 2: CÁLCULO DEL CONSUMO ---
+    static List<Double> calcularConsumos(List<Double> temperaturas) {
+        List<Double> consumos = new ArrayList<>();
+        for (double temp : temperaturas) {
+            if (temp >= 25) {
+                consumos.add((temp - 25) * 10);
+            } else {
+                consumos.add(0.0);
+            }
+        }
+        return consumos;
     }
 }
