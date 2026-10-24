@@ -5,6 +5,8 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -21,14 +23,15 @@ public class Practica4 {
     }
 
     public static void main(String[] args) throws Exception {
-        // 1. Obtener datos
         RespuestaOpenMeteo respuesta = obtenerDatosMeteorologicos();
+        List<String> dias = respuesta.daily.time;
         List<Double> temperaturas = respuesta.daily.temperature2mMax;
 
-        // 2. Calcular consumos
         List<Double> consumos = calcularConsumos(temperaturas);
-        System.out.println("Temperaturas: " + temperaturas);
-        System.out.println("Consumos calculados: " + consumos);
+
+        // 3. Escribir CSV
+        escribirCSV(dias, temperaturas, consumos);
+        System.out.println("¡Archivo datos.csv generado correctamente!");
     }
 
     static RespuestaOpenMeteo obtenerDatosMeteorologicos() throws Exception {
@@ -44,7 +47,6 @@ public class Practica4 {
         return gson.fromJson(response.body(), RespuestaOpenMeteo.class);
     }
 
-    // --- MÉTODO 2: CÁLCULO DEL CONSUMO ---
     static List<Double> calcularConsumos(List<Double> temperaturas) {
         List<Double> consumos = new ArrayList<>();
         for (double temp : temperaturas) {
@@ -55,5 +57,16 @@ public class Practica4 {
             }
         }
         return consumos;
+    }
+
+    // --- MÉTODO 3: GUARDAR CSV ---
+    static void escribirCSV(List<String> dias, List<Double> temps, List<Double> consumos) throws Exception {
+        StringBuilder sb = new StringBuilder("Dia,Temperatura_maxima,Consumo_kWh\n");
+        for (int i = 0; i < dias.size(); i++) {
+            sb.append(dias.get(i)).append(",")
+                    .append(temps.get(i)).append(",")
+                    .append(consumos.get(i)).append("\n");
+        }
+        Files.writeString(Path.of("datos.csv"), sb.toString());
     }
 }
